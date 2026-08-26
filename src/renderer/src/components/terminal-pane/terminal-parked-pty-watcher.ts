@@ -5,6 +5,7 @@ import { closeTerminalTab } from '../terminal/terminal-tab-actions'
 import { startParkedTerminalByteWatcher } from './parked-terminal-byte-watcher'
 import { subscribeToPtyExit } from './pty-dispatcher'
 import { discardPreHandlerPtyState, hasPreHandlerPtyExit } from './pty-pre-handler-buffer'
+import { consumeCommittedPtyShutdownExit } from './pty-shutdown-exit-deferral'
 import { detachTerminalLayoutLeaf } from './terminal-layout-leaf-detach'
 import {
   isParkRestorableTerminalPty,
@@ -55,6 +56,16 @@ export function startParkedPtyWatcher(args: {
   }
   const handlePtyExit = (_code: number, { hadPrimary }: { hadPrimary: boolean }): void => {
     useAppStore.getState().clearRuntimePaneTitle(tab.id, pane.paneId)
+    // Why: detach drops the session-bound exit observer (it pinned the disposed
+    // pane's xterm buffers), so this sidecar is the sole owner of a parked PTY's
+    // exit. A sleep/shutdown exit must keep the tab AND its layout — revival
+    // belongs to the wake path — and must leave the buffered exit in place as
+    // the tombstone that stops watcher syncs re-pinning the dead PTY.
+    if (!hadPrimary && isSleepPreservedParkedPtyExit(ptyId)) {
+      entry.disposersByPtyId.get(ptyId)?.()
+      entry.disposersByPtyId.delete(ptyId)
+      return
+    }
     if (entry.disposersByPtyId.size > 1) {
       discardPreHandlerPtyState(ptyId)
       collapseParkedExitedLeaf(tab.id, ptyId)
@@ -103,6 +114,20 @@ export function startParkedPtyWatcher(args: {
     unsubscribeExit()
     disposeWatcher()
   })
+}
+
+// Why these three markers: a pending renderer shutdown transaction, a
+// suppressed intentional restart, or a committed sleep (host-initiated remote
+// sleep marks it from the exit payload) all mean this exit is orchestrated —
+// closing the tab would destroy state the wake/restart path owns. Host-sleep
+// dispositions are remote-runtime-only and remote PTYs never reach this
+// sidecar, so consumeCommittedPtyShutdownExit runs without an environment id.
+function isSleepPreservedParkedPtyExit(ptyId: string): boolean {
+  const state = useAppStore.getState()
+  if (state.isPtyShutdownPending(ptyId) || state.suppressedPtyExitIds[ptyId]) {
+    return true
+  }
+  return consumeCommittedPtyShutdownExit(ptyId, null)
 }
 
 export function collapseParkedExitedLeaf(tabId: string, ptyId: string): void {

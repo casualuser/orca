@@ -93,6 +93,8 @@ type MockStoreState = {
   setRuntimePaneTitle: ReturnType<typeof vi.fn>
   setTabLayout: ReturnType<typeof vi.fn>
   updateTabTitle: ReturnType<typeof vi.fn>
+  isPtyShutdownPending: ReturnType<typeof vi.fn>
+  suppressedPtyExitIds: Record<string, true>
 }
 
 let mockStoreState: MockStoreState
@@ -159,7 +161,9 @@ describe('terminal-parked-tab-watchers', () => {
       clearRuntimePaneTitle: vi.fn(),
       setRuntimePaneTitle: vi.fn(),
       setTabLayout: vi.fn(),
-      updateTabTitle: vi.fn()
+      updateTabTitle: vi.fn(),
+      isPtyShutdownPending: vi.fn(() => false),
+      suppressedPtyExitIds: {}
     }
     ;(globalThis as { window?: unknown }).window = { api: { pty: { write: ptyWrite } } }
     clearTerminalProviderSnapshotCapabilities()

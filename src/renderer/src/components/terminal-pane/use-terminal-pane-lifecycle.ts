@@ -1969,7 +1969,10 @@ export function useTerminalPaneLifecycle({
           })
         ) {
           // Why: tab-move rehome and web-mirror remount unmount a still-live tab; detach preserves the running PTY so the remount reattaches without restarting the shell.
-          transport.detach?.()
+          // preserveExitObserver:false — the session-bound exit observer closes over the disposed pane's xterm
+          // (~14MB/pane pinned in the ptyId-keyed dispatcher maps until exit). Detached exit is owned by the
+          // parked watcher sidecar; without a watcher it buffers and drains into the next mount's registerExit.
+          transport.detach?.({ preserveExitObserver: false })
         } else {
           // Why: un-attached transports have no PTY ID; destroy so an in-flight spawn resolves to a killed PTY, not a revived stale binding after unmount.
           transport.destroy?.()
