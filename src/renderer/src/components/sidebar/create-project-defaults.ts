@@ -4,6 +4,12 @@ function pathSeparatorFor(pathValue: string): '/' | '\\' {
   return pathValue.includes('\\') ? '\\' : '/'
 }
 
+/** The `~/orca/projects` fallback, which is the only default the `~` shorthand can
+ *  stand for. A configured Workspace Directory must be shown verbatim. */
+function isHomeProjectsFallback(pathValue: string): boolean {
+  return /(?:^|[\\/])orca[\\/]projects$/.test(pathValue)
+}
+
 function trimTrailingSeparators(pathValue: string): string {
   const trimmed = pathValue.replace(/[\\/]+$/, '')
   if (trimmed === '' && pathValue.startsWith('/')) {
@@ -81,7 +87,13 @@ export function formatCreateProjectParentSummary({
   if (!trimmedParent) {
     return runtimeEnvironmentId || isRemoteHost ? missingServerLocationLabel : missingLocationLabel
   }
-  if (defaultParent && trimmedParent === defaultParent && !runtimeEnvironmentId && !isRemoteHost) {
+  if (
+    defaultParent &&
+    trimmedParent === defaultParent &&
+    !runtimeEnvironmentId &&
+    !isRemoteHost &&
+    isHomeProjectsFallback(trimmedParent)
+  ) {
     return '~/orca/projects'
   }
   return trimmedParent
