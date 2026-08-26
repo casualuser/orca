@@ -653,7 +653,10 @@ export function retireMountedTerminalPaneSurface(args: {
   ) => void
   syncPanePtyLayoutBinding: (paneId: number, ptyId: string | null) => void
   clearTabPtyId: (tabId: string, ptyId: string) => void
-  transport?: { detach?: () => void; destroy?: () => void }
+  transport?: {
+    detach?: (options?: { preserveExitObserver?: boolean }) => void
+    destroy?: () => void
+  }
 }): void {
   args.retireAgentPaneAuthority(args.paneKey, {
     preserveSleepingAgentSession: true
@@ -662,7 +665,10 @@ export function retireMountedTerminalPaneSurface(args: {
     args.syncPanePtyLayoutBinding(args.paneId, null)
     args.clearTabPtyId(args.tabId, args.ptyId)
   }
-  args.transport?.detach?.()
+  // preserveExitObserver:false — a retired surface keeps its PTY alive but starts no parked
+  // watcher, so a preserved observer would pin the disposed pane's xterm for the whole session
+  // (the entries only die on real PTY exit). The buffered exit drains into a successor mount.
+  args.transport?.detach?.({ preserveExitObserver: false })
 }
 
 /** Wires mounted terminal panes to renderer state and terminal event handling. */
@@ -1494,7 +1500,10 @@ export function useTerminalPaneLifecycle({
         if (transport && !isRetiredSurface) {
           if (isDetachedToTab) {
             // Why: detach hands the PTY to a new tab, so drop renderer listeners without process teardown.
-            transport.detach?.()
+            // preserveExitObserver:false for the same reason as unmount — the destination tab's
+            // registerExit re-owns the exit, and a preserved observer would pin this pane's xterm
+            // until then (forever if the destination never mounts).
+            transport.detach?.({ preserveExitObserver: false })
           } else {
             const ptyId = suppressIntentionalPaneCloseExit(
               transport,
