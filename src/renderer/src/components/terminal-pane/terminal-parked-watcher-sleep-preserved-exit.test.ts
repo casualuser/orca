@@ -152,4 +152,21 @@ describe('sleep-preserved parked exits (sole-owner sidecar)', () => {
     // No sleep marker: the pre-fix disposition is untouched.
     expect(discardPreHandlerPtyState).toHaveBeenCalledWith(SECOND_PTY_ID)
   })
+
+  it('still closes the tab on an ordinary exit of the last parked pane', () => {
+    const entry = startSplitWatchers()
+    exitCallbacksByPtyId.get(SECOND_PTY_ID)?.(0, { hadPrimary: false })
+    expect(entry.disposersByPtyId.size).toBe(1)
+
+    exitCallbacksByPtyId.get(PTY_ID)?.(0, { hadPrimary: false })
+
+    // The unarmed committed-marker probe in the guard must not block the close.
+    expect(closeTerminalTab).toHaveBeenCalledWith(
+      TAB_ID,
+      expect.objectContaining({
+        hostCloseReason: 'pty-exit',
+        lifecyclePtyId: PTY_ID
+      })
+    )
+  })
 })
