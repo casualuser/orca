@@ -31,8 +31,10 @@ vi.mock('./pty-dispatcher', () => ({
   }
 }))
 
+const consumePreHandlerPtyState = vi.fn()
 const discardPreHandlerPtyState = vi.fn()
 vi.mock('./pty-pre-handler-buffer', () => ({
+  consumePreHandlerPtyState: (ptyId: string) => consumePreHandlerPtyState(ptyId),
   discardPreHandlerPtyState: (ptyId: string) => discardPreHandlerPtyState(ptyId),
   hasPreHandlerPtyExit: () => false
 }))
@@ -124,7 +126,9 @@ describe('newborn-preserved parked exits (sole-owner sidecar)', () => {
     exitCallbacksByPtyId.get(PTY_ID)?.(1, { hadPrimary: false })
 
     expect(closeTerminalTab).not.toHaveBeenCalled()
-    // The buffered exit stays as the reveal's evidence, like the sleep branch.
+    // The exit is consumed like the pre-fix primary observer's, so reveal
+    // reattaches instead of draining a buffered exit and closing the tab.
+    expect(consumePreHandlerPtyState).toHaveBeenCalledWith(PTY_ID)
     expect(discardPreHandlerPtyState).not.toHaveBeenCalled()
     expect(mockStoreState.clearRuntimePaneTitle).toHaveBeenCalledWith(TAB_ID, 1)
     expect(startedWatcherDisposers[0]).toHaveBeenCalled()

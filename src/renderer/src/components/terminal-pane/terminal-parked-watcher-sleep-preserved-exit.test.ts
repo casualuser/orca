@@ -32,6 +32,7 @@ vi.mock('./pty-dispatcher', () => ({
 
 const discardPreHandlerPtyState = vi.fn()
 vi.mock('./pty-pre-handler-buffer', () => ({
+  consumePreHandlerPtyState: vi.fn(),
   discardPreHandlerPtyState: (ptyId: string) => discardPreHandlerPtyState(ptyId),
   hasPreHandlerPtyExit: () => false
 }))

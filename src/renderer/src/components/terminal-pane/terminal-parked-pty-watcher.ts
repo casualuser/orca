@@ -4,7 +4,11 @@ import { useAppStore } from '@/store'
 import { closeTerminalTab } from '../terminal/terminal-tab-actions'
 import { startParkedTerminalByteWatcher } from './parked-terminal-byte-watcher'
 import { subscribeToPtyExit } from './pty-dispatcher'
-import { discardPreHandlerPtyState, hasPreHandlerPtyExit } from './pty-pre-handler-buffer'
+import {
+  consumePreHandlerPtyState,
+  discardPreHandlerPtyState,
+  hasPreHandlerPtyExit
+} from './pty-pre-handler-buffer'
 import { consumeCommittedPtyShutdownExit } from './pty-shutdown-exit-deferral'
 import { detachTerminalLayoutLeaf } from './terminal-layout-leaf-detach'
 import {
@@ -78,14 +82,21 @@ export function startParkedPtyWatcher(args: {
       entry.disposersByPtyId.delete(ptyId)
       return
     }
-    // Why: parity with the session observer's sole-newborn guard
-    // (pty-exit-hibernate): a fresh-spawned shell nobody ever typed into can
-    // die on its own (e.g. a failing .envrc), and its tab must survive so the
-    // error stays visible. The exit stays buffered as the reveal's evidence,
-    // exactly like the sleep-preserved branch above.
+    // Why: parity with the session observer's sole-newborn guard (pty-exit-hibernate) —
+    // a worktree's only fresh-spawned shell nobody ever typed into can die on shell
+    // startup (e.g. a failing .envrc); keep its tab readable instead of closing it and
+    // stranding the user on Landing. Split siblings keep their own branch above.
     if (pane.untouchedFreshSpawn) {
       entry.disposersByPtyId.get(ptyId)?.()
       entry.disposersByPtyId.delete(ptyId)
+      // Consume the buffered exit exactly as the pre-fix primary observer did — NOT
+      // the sleep branch's tombstone. A tombstone would send reveal down connectIpcPty's
+      // exitedBeforeAttach path, draining the exit into the reattached session (where
+      // spawnedFreshPtyId is null, so the guard fails) and closing the tab the moment
+      // the user reveals it. Consumption cannot let a later watcher sync re-register
+      // this dead PTY: paneIdByPtyId deliberately keeps the slot, so
+      // reconcileParkedWatcherPtyIds never computes it as added.
+      consumePreHandlerPtyState(ptyId)
       return
     }
 
