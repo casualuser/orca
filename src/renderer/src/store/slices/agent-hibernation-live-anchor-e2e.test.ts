@@ -40,7 +40,6 @@ function seedWorkspace(store: ReturnType<typeof createTestStore>): void {
 function planFrom(state: AppState, ptyBindingFirstSeenAt: number): string[] {
   return planAgentHibernationCandidates({
     settings: state.settings,
-    activeWorktreeId: state.activeWorktreeId,
     foregroundTerminalTabIds: [],
     tabsByWorktree: state.tabsByWorktree,
     terminalLayoutsByTabId: state.terminalLayoutsByTabId,

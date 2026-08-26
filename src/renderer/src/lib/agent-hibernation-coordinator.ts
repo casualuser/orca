@@ -68,7 +68,6 @@ function snapshotFromState(
 ): AgentHibernationPlannerSnapshot {
   return {
     settings: state.settings,
-    activeWorktreeId: state.activeWorktreeId,
     foregroundTerminalTabIds: getForegroundTerminalTabIds(),
     tabsByWorktree: targetWorktreeId
       ? { [targetWorktreeId]: state.tabsByWorktree[targetWorktreeId] ?? [] }

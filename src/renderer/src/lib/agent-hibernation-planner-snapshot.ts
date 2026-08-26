@@ -5,7 +5,6 @@ import type { TerminalLayoutSnapshot, TerminalTab } from '../../../shared/termin
 
 export type AgentHibernationPlannerSnapshot = {
   settings: Pick<GlobalSettings, 'experimentalAgentHibernation' | 'agentHibernationIdleMs'> | null
-  activeWorktreeId: string | null
   foregroundTerminalTabIds: string[]
   tabsByWorktree: Record<string, TerminalTab[]>
   terminalLayoutsByTabId: Record<string, TerminalLayoutSnapshot | undefined>

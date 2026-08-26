@@ -63,7 +63,6 @@ function snapshot(
       experimentalAgentHibernation: true,
       agentHibernationIdleMs: DEFAULT_AGENT_HIBERNATION_IDLE_MS
     },
-    activeWorktreeId: 'wt-active',
     foregroundTerminalTabIds: [],
     tabsByWorktree: { 'wt-bg': [tab()] },
     terminalLayoutsByTabId: { 'tab-1': layout() },
@@ -87,7 +86,7 @@ function plannedPaneKeys(input: AgentHibernationPlannerSnapshot): string[] {
 }
 
 describe('agent sleep planner', () => {
-  it('selects nothing when disabled, active, or foreground', () => {
+  it('selects nothing when disabled or foreground', () => {
     expect(
       plannedWorktrees(
         snapshot({
@@ -98,8 +97,33 @@ describe('agent sleep planner', () => {
         })
       )
     ).toEqual([])
-    expect(plannedWorktrees(snapshot({ activeWorktreeId: 'wt-bg' }))).toEqual([])
     expect(plannedWorktrees(snapshot({ foregroundTerminalTabIds: ['tab-1'] }))).toEqual([])
+  })
+
+  // Why: #16211 — a 16 GB host keeps three or four product worktrees open and works in one of
+  // them, so the tree that accumulates idle agents is the one the old blanket active-worktree
+  // skip protected. Only the foreground tab, and a tab left inside the idle window, stay out.
+  it('parks an idle non-foreground tab in the worktree being worked in', () => {
+    const backgroundTab = tab('tab-2', 'wt-bg')
+    const backgroundEntry = entry({ paneKey: `tab-2:${OTHER_LEAF}`, tabId: 'tab-2' })
+    const withTwoTabs = snapshot({
+      tabsByWorktree: { 'wt-bg': [tab(), backgroundTab] },
+      terminalLayoutsByTabId: { 'tab-1': layout(), 'tab-2': layout(OTHER_LEAF, 'pty-2') },
+      ptyIdsByTabId: { 'tab-1': ['pty-1'], 'tab-2': ['pty-2'] },
+      agentStatusByPaneKey: {
+        [entry().paneKey]: entry(),
+        [backgroundEntry.paneKey]: backgroundEntry
+      },
+      foregroundTerminalTabIds: ['tab-1']
+    })
+
+    expect(plannedPaneKeys(withTwoTabs)).toEqual([`tab-2:${OTHER_LEAF}`])
+  })
+
+  it('holds a tab the user left inside the idle window', () => {
+    expect(
+      plannedWorktrees(snapshot({ foregroundTerminalLastSeenAtByTabId: { 'tab-1': NOW - 1 } }))
+    ).toEqual([])
   })
 
   it('requires done resumable provider-session entries', () => {

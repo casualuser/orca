@@ -112,7 +112,11 @@ export function planAgentHibernationCandidates(
   const agentEntriesByTabId = getAgentEntriesByTabId(snapshot.agentStatusByPaneKey)
   const candidates: AgentHibernationCandidate[] = []
   for (const [worktreeId, tabs] of Object.entries(snapshot.tabsByWorktree)) {
-    if (!worktreeId || worktreeId === snapshot.activeWorktreeId || tabs.length === 0) {
+    // Why: the tab you are looking at is `foregroundTerminalTabIds` below, and a tab you
+    // recently left is held by the `foregroundTerminalLastSeenAtByTabId` floor. Skipping the
+    // whole active worktree on top of that parked nothing in the tree you actually work in —
+    // which is where a 16 GB host accumulates its idle agents (#16211).
+    if (!worktreeId || tabs.length === 0) {
       continue
     }
     if (
