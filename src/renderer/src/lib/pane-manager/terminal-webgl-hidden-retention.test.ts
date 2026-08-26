@@ -47,7 +47,18 @@ describe('terminal-webgl-hidden-retention', () => {
     suspendPaneRendering(panes)
     expect(addon?.dispose).toHaveBeenCalled()
     expect(panes[0].webglAddon).toBeNull()
-    expect(panes[0].terminal.blur).not.toHaveBeenCalled()
+  })
+
+  // Why: #16241 — over the retention cap the dispose branch left every hidden pane focused,
+  // so each kept an xterm cursor-blink timer alive behind display:none, growing with worktrees.
+  it('blurs suspended panes on both the retained and the disposed branch', () => {
+    const retained = [createPane()]
+    suspendPaneRendering(retained, retentionFor({}, retained))
+    expect(retained[0].terminal.blur).toHaveBeenCalledTimes(1)
+
+    const disposed = [createPane()]
+    suspendPaneRendering(disposed)
+    expect(disposed[0].terminal.blur).toHaveBeenCalledTimes(1)
   })
 
   it('evicts the least-recently-hidden owner over the context cap', () => {

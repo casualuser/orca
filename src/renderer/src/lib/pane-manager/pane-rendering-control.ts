@@ -54,16 +54,17 @@ export function suspendPaneRendering(
   retention?: { owner: object; livePanes: () => Iterable<ManagedPaneInternal> }
 ): void {
   const suspended = Array.from(panes)
+  // Why: a hidden pane must not stay focused whichever renderer it lands on — a focused
+  // xterm keeps its cursor-blink timer running behind the hidden surface, and the dispose
+  // branch below (over the retention cap, so every pane beyond the first few worktrees)
+  // used to skip this and leave that timer alive per pane, forever (#16241).
   for (const pane of suspended) {
     pane.webglAttachmentDeferred = true
+    pane.terminal.blur()
   }
   // Keep recent hidden worktrees on live WebGL so switch-back never presents
   // DOM-fallback frames; evicted/over-cap owners fall back to dispose.
   if (retention && tryRetainHiddenPanesWebgl(retention.owner, retention.livePanes)) {
-    // Why: retained WebGL keeps xterm's focused cursor timer alive behind the hidden surface.
-    for (const pane of suspended) {
-      pane.terminal.blur()
-    }
     return
   }
   for (const pane of suspended) {
