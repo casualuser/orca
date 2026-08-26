@@ -78,6 +78,16 @@ export function startParkedPtyWatcher(args: {
       entry.disposersByPtyId.delete(ptyId)
       return
     }
+    // Why: parity with the session observer's sole-newborn guard
+    // (pty-exit-hibernate): a fresh-spawned shell nobody ever typed into can
+    // die on its own (e.g. a failing .envrc), and its tab must survive so the
+    // error stays visible. The exit stays buffered as the reveal's evidence,
+    // exactly like the sleep-preserved branch above.
+    if (pane.untouchedFreshSpawn) {
+      entry.disposersByPtyId.get(ptyId)?.()
+      entry.disposersByPtyId.delete(ptyId)
+      return
+    }
 
     // Why: the empty entry prevents a pending pinned-close confirmation from restarting the dead PTY.
     entry.disposersByPtyId.get(ptyId)?.()
