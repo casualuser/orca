@@ -24,7 +24,8 @@ import type {
 
 export const EXTERNAL_AUTOMATION_PROVIDERS = [
   'hermes',
-  'openclaw'
+  'openclaw',
+  'zeroclaw'
 ] as const satisfies readonly ExternalAutomationProvider[]
 
 export function isExternalAutomationProvider(value: unknown): value is ExternalAutomationProvider {

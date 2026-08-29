@@ -514,6 +514,55 @@ describe('skill discovery', () => {
     })
   })
 
+  it('discovers Skills installed in the ZeroClaw and OpenClaw homes', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'orca-zc-skills-'))
+    const home = join(root, 'home')
+    const zcSkillDir = join(home, '.zeroclaw', 'skills', 'rust-analyzer')
+    const ocSkillDir = join(home, '.openclaw', 'skills', 'claw-tools')
+    await mkdir(zcSkillDir, { recursive: true })
+    await mkdir(ocSkillDir, { recursive: true })
+    await writeFile(
+      join(zcSkillDir, 'SKILL.md'),
+      ['---', 'name: rust-analyzer', 'description: ZeroClaw rust analysis.', '---', ''].join('\n')
+    )
+    await writeFile(
+      join(ocSkillDir, 'SKILL.md'),
+      ['---', 'name: claw-tools', 'description: OpenClaw tools.', '---', ''].join('\n')
+    )
+
+    const result = await discoverSkills({
+      homeDir: home,
+      cwd: join(root, 'missing-cwd')
+    })
+
+    expect(result.skills).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'rust-analyzer',
+          sourceKind: 'home',
+          sourceLabel: 'ZeroClaw home',
+          directoryPath: zcSkillDir,
+          providers: ['agent-skills']
+        }),
+        expect.objectContaining({
+          name: 'claw-tools',
+          sourceKind: 'home',
+          sourceLabel: 'OpenClaw home',
+          directoryPath: ocSkillDir,
+          providers: ['agent-skills']
+        })
+      ])
+    )
+    expect(result.sources.find((source) => source.id === 'home-zeroclaw')).toMatchObject({
+      owner: 'zeroclaw',
+      exists: true
+    })
+    expect(result.sources.find((source) => source.id === 'home-openclaw')).toMatchObject({
+      owner: 'openclaw',
+      exists: true
+    })
+  })
+
   it('discovers Hermes Skills under a relocated HERMES_HOME profile', async () => {
     const root = await mkdtemp(join(tmpdir(), 'orca-skills-'))
     const home = join(root, 'home')

@@ -42,6 +42,7 @@ describe('ExternalAutomationProviderCatalog', () => {
       jobs: [{ id: 'job-1', name: 'Monitor', run_count: 3, runs: [] }],
       hermesAvailable: false,
       openclawAvailable: false,
+      zeroclawAvailable: false,
       error: null
     })
   })
@@ -60,6 +61,7 @@ describe('ExternalAutomationProviderCatalog', () => {
     expect(result.jobs).toEqual([])
     expect(result.hermesAvailable).toBe(true)
     expect(result.openclawAvailable).toBe(false)
+    expect(result.zeroclawAvailable).toBe(false)
     expect(result.error).toMatch(/^SyntaxError:/)
   })
 
@@ -83,5 +85,22 @@ describe('ExternalAutomationProviderCatalog', () => {
 
     expect(result.jobs).toEqual([])
     expect(result.error).toBe('Error: Invalid external automation job ID.')
+  })
+
+  it('lists ZeroClaw jobs and command availability', async () => {
+    const { ExternalAutomationProviderCatalog } =
+      await import('./external-automation-provider-catalog')
+    const catalog = new ExternalAutomationProviderCatalog(
+      vi.fn().mockResolvedValue(undefined),
+      vi.fn()
+    )
+
+    const result = await catalog.listJobs({ provider: 'zeroclaw' })
+
+    expect(result.jobs).toEqual([])
+    expect(result.hermesAvailable).toBe(false)
+    expect(result.openclawAvailable).toBe(false)
+    expect(result.zeroclawAvailable).toBe(true)
+    expect(result.error).toBeNull()
   })
 })

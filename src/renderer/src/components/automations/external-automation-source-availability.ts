@@ -47,7 +47,13 @@ export function getExternalAutomationActionDisabledMessage(args: {
 }
 
 function getProviderLabel(provider: ExternalAutomationProvider): string {
-  return provider === 'hermes' ? 'Hermes' : 'OpenClaw'
+  if (provider === 'hermes') {
+    return 'Hermes'
+  }
+  if (provider === 'zeroclaw') {
+    return 'ZeroClaw'
+  }
+  return 'OpenClaw'
 }
 
 function isSshDisconnectedError(message: string): boolean {
