@@ -268,11 +268,7 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     // Why: `devin -- <prompt>` auto-submits immediately (docs.devin.ai/cli), so start the REPL with no argv prompt.
     promptInjectionMode: 'stdin-after-start'
   },
-  zeroclaw: {
-    ...stdinAgent('zeroclaw'),
-    windowsShiftEnterEncoding: 'csi-u',
-    ctrlEnterEncoding: 'csi-u'
-  }
+  zeroclaw: stdinAgent('zeroclaw')
 }
 
 export const TUI_AGENT_CONFIG: Record<TuiAgent, TuiAgentConfig> = Object.fromEntries(

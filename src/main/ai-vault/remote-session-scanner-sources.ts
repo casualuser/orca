@@ -283,6 +283,13 @@ const remoteZeroClawSources = (
     'zeroclaw',
     remoteHome,
     hostPlatform,
+    ['.zeroclaw', 'data', 'sessions'],
+    zeroClawParser
+  ),
+  jsonlSource(
+    'zeroclaw',
+    remoteHome,
+    hostPlatform,
     ['.zeroclaw', 'agents'],
     zeroClawParser,
     (path) => remotePathSegments(path).includes('sessions')
@@ -293,11 +300,8 @@ function remotePathSegments(path: string): string[] {
   return path.replace(/\\/g, '/').split('/').filter(Boolean)
 }
 
-const remotePiSessionsSegments = (): string[] =>
+const remotePiSessionsSegments = () =>
   normalizeAgentSessionsDir('/.pi/agent/sessions', '.pi').split('/').filter(Boolean)
-
-const remoteOmpSessionsSegments = (): string[] =>
+const remoteOmpSessionsSegments = () =>
   normalizeAgentSessionsDir('/.omp/agent/sessions', '.omp').split('/').filter(Boolean)
-
-// Why: remote roots are posix regardless of client platform; literal segments avoid Windows backslash collapse.
-const remotePrimeAgentSessionsSegments = (): string[] => ['.prime', 'agent', 'sessions']
+const remotePrimeAgentSessionsSegments = () => ['.prime', 'agent', 'sessions']

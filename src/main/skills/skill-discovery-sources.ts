@@ -142,7 +142,19 @@ export function buildSkillDiscoverySources(
     homeSource('home-trae', 'Trae home', ['.trae-cn', 'skills'], 'trae'),
     homeSource('home-aug', 'Augment home', ['.augment', 'skills'], 'aug'),
     homeSource('home-openclaw', 'OpenClaw home', ['.openclaw', 'skills'], 'openclaw'),
-    homeSource('home-zeroclaw', 'ZeroClaw home', ['.zeroclaw', 'skills'], 'zeroclaw')
+    homeSource('home-zeroclaw', 'ZeroClaw home', ['.zeroclaw', 'skills'], 'zeroclaw'),
+    homeSource(
+      'home-zeroclaw-data',
+      'ZeroClaw data skills',
+      ['.zeroclaw', 'data', 'skills'],
+      'zeroclaw'
+    ),
+    homeSource(
+      'home-zeroclaw-workspace',
+      'ZeroClaw workspace skills',
+      ['.zeroclaw', 'workspace', 'skills'],
+      'zeroclaw'
+    )
   ]
 
   const projectPaths = new Set<string>()
