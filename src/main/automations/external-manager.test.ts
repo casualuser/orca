@@ -347,36 +347,6 @@ describe('runExternalAutomationAction', () => {
       timeoutMs: 30_000
     })
   })
-
-  it('maps ZeroClaw lifecycle actions through its cron CLI names', async () => {
-    await runExternalAutomationAction({
-      managerId: 'zeroclaw:local',
-      provider: 'zeroclaw',
-      target: { type: 'local' },
-      jobId: 'job-1',
-      action: 'pause'
-    })
-
-    expect(runProcessMock).toHaveBeenCalledWith({
-      program: 'zeroclaw',
-      args: ['cron', 'pause', 'job-1'],
-      timeoutMs: 30_000
-    })
-
-    await runExternalAutomationAction({
-      managerId: 'zeroclaw:local',
-      provider: 'zeroclaw',
-      target: { type: 'local' },
-      jobId: 'job-1',
-      action: 'delete'
-    })
-
-    expect(runProcessMock).toHaveBeenCalledWith({
-      program: 'zeroclaw',
-      args: ['cron', 'remove', 'job-1'],
-      timeoutMs: 30_000
-    })
-  })
 })
 
 describe('listExternalAutomationRuns', () => {

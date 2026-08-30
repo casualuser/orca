@@ -243,7 +243,7 @@ export type AutomationDispatchResult = {
   error?: string | null
 }
 
-export type ExternalAutomationProvider = 'hermes' | 'openclaw' | 'zeroclaw'
+export type ExternalAutomationProvider = 'hermes' | 'openclaw'
 export type ExternalAutomationManagerStatus = 'available' | 'unavailable'
 export type ExternalAutomationAction = 'pause' | 'resume' | 'run' | 'delete'
 export type ExternalAutomationRunStatus = 'completed' | 'failed' | 'unknown'

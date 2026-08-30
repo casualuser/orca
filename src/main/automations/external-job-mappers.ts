@@ -210,11 +210,7 @@ export function mapHermesJobs(managerId: string, rawJobs: unknown): ExternalAuto
   })
 }
 
-export function mapClawFamilyJobs(
-  managerId: string,
-  rawJobs: unknown,
-  provider: ExternalAutomationProvider = 'openclaw'
-): ExternalAutomationJob[] {
+export function mapOpenClawJobs(managerId: string, rawJobs: unknown): ExternalAutomationJob[] {
   const jobs = Array.isArray(rawJobs)
     ? rawJobs
     : isRecord(rawJobs) && Array.isArray(rawJobs.jobs)
@@ -229,7 +225,7 @@ export function mapClawFamilyJobs(
     return {
       id,
       managerId,
-      provider,
+      provider: 'openclaw',
       name: (asString(job.name) ?? preview) || id,
       schedule: openClawScheduleDisplay(job),
       rawSchedule: openClawRawSchedule(job),
@@ -249,18 +245,10 @@ export function mapClawFamilyJobs(
       runCount: asNumber(job.run_count) ?? (Array.isArray(job.runs) ? job.runs.length : 0),
       runs: mapExternalRuns({
         managerId,
-        provider,
+        provider: 'openclaw',
         jobId: id,
         rawRuns: job.runs
       })
     }
   })
-}
-
-export function mapOpenClawJobs(managerId: string, rawJobs: unknown): ExternalAutomationJob[] {
-  return mapClawFamilyJobs(managerId, rawJobs, 'openclaw')
-}
-
-export function mapZeroClawJobs(managerId: string, rawJobs: unknown): ExternalAutomationJob[] {
-  return mapClawFamilyJobs(managerId, rawJobs, 'zeroclaw')
 }

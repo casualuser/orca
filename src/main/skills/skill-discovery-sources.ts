@@ -150,6 +150,12 @@ export function buildSkillDiscoverySources(
       'zeroclaw'
     ),
     homeSource(
+      'home-zeroclaw-shared',
+      'ZeroClaw shared skills',
+      ['.zeroclaw', 'shared', 'skills'],
+      'zeroclaw'
+    ),
+    homeSource(
       'home-zeroclaw-workspace',
       'ZeroClaw workspace skills',
       ['.zeroclaw', 'workspace', 'skills'],

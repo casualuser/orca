@@ -1,10 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import {
-  HERMES_JOBS_FILE,
-  OPENCLAW_JOBS_FILE,
-  ZEROCLAW_JOBS_FILE
-} from './external-automation-storage-paths'
+import { HERMES_JOBS_FILE, OPENCLAW_JOBS_FILE } from './external-automation-storage-paths'
 import {
   externalAutomationProvider,
   type ExternalAutomationProvider
@@ -30,7 +26,6 @@ export class ExternalAutomationProviderCatalog {
     jobs: unknown[]
     hermesAvailable: boolean
     openclawAvailable: boolean
-    zeroclawAvailable: boolean
     error: string | null
   }> {
     const provider = externalAutomationProvider(params?.provider)
@@ -44,7 +39,6 @@ export class ExternalAutomationProviderCatalog {
       jobs,
       hermesAvailable: provider === 'hermes' && available,
       openclawAvailable: provider === 'openclaw' && available,
-      zeroclawAvailable: provider === 'zeroclaw' && available,
       error: jobsResult.status === 'rejected' ? String(jobsResult.reason) : null
     }
   }
@@ -63,12 +57,7 @@ export class ExternalAutomationProviderCatalog {
   }
 
   private async readJobs(provider: ExternalAutomationProvider): Promise<unknown[]> {
-    const jobsFile =
-      provider === 'hermes'
-        ? HERMES_JOBS_FILE
-        : provider === 'zeroclaw'
-          ? ZEROCLAW_JOBS_FILE
-          : OPENCLAW_JOBS_FILE
+    const jobsFile = provider === 'hermes' ? HERMES_JOBS_FILE : OPENCLAW_JOBS_FILE
     if (!existsSync(jobsFile)) {
       return []
     }

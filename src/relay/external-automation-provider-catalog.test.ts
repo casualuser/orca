@@ -5,19 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('ExternalAutomationProviderCatalog', () => {
   let hermesHome: string
-  let zeroclawHome: string
   let previousHermesHome: string | undefined
-  let previousZeroclawStateDir: string | undefined
 
   beforeEach(async () => {
     previousHermesHome = process.env.HERMES_HOME
-    previousZeroclawStateDir = process.env.ZEROCLAW_STATE_DIR
     hermesHome = await mkdtemp(join(tmpdir(), 'relay-hermes-catalog-'))
-    zeroclawHome = await mkdtemp(join(tmpdir(), 'relay-zeroclaw-catalog-'))
     process.env.HERMES_HOME = hermesHome
-    process.env.ZEROCLAW_STATE_DIR = zeroclawHome
     await mkdir(join(hermesHome, 'cron'), { recursive: true })
-    await mkdir(join(zeroclawHome, 'cron'), { recursive: true })
     vi.resetModules()
   })
 
@@ -27,13 +21,7 @@ describe('ExternalAutomationProviderCatalog', () => {
     } else {
       process.env.HERMES_HOME = previousHermesHome
     }
-    if (previousZeroclawStateDir === undefined) {
-      delete process.env.ZEROCLAW_STATE_DIR
-    } else {
-      process.env.ZEROCLAW_STATE_DIR = previousZeroclawStateDir
-    }
     await rm(hermesHome, { recursive: true, force: true })
-    await rm(zeroclawHome, { recursive: true, force: true })
     vi.resetModules()
   })
 
@@ -54,7 +42,6 @@ describe('ExternalAutomationProviderCatalog', () => {
       jobs: [{ id: 'job-1', name: 'Monitor', run_count: 3, runs: [] }],
       hermesAvailable: false,
       openclawAvailable: false,
-      zeroclawAvailable: false,
       error: null
     })
   })
@@ -73,7 +60,6 @@ describe('ExternalAutomationProviderCatalog', () => {
     expect(result.jobs).toEqual([])
     expect(result.hermesAvailable).toBe(true)
     expect(result.openclawAvailable).toBe(false)
-    expect(result.zeroclawAvailable).toBe(false)
     expect(result.error).toMatch(/^SyntaxError:/)
   })
 
@@ -97,27 +83,5 @@ describe('ExternalAutomationProviderCatalog', () => {
 
     expect(result.jobs).toEqual([])
     expect(result.error).toBe('Error: Invalid external automation job ID.')
-  })
-
-  it('lists ZeroClaw jobs and command availability', async () => {
-    await writeFile(
-      join(zeroclawHome, 'cron', 'jobs.json'),
-      JSON.stringify({ jobs: [{ id: 'zc-1', name: 'ZeroClaw Sync' }] }),
-      'utf-8'
-    )
-    const { ExternalAutomationProviderCatalog } =
-      await import('./external-automation-provider-catalog')
-    const catalog = new ExternalAutomationProviderCatalog(
-      vi.fn().mockResolvedValue(undefined),
-      vi.fn()
-    )
-
-    const result = await catalog.listJobs({ provider: 'zeroclaw' })
-
-    expect(result.jobs).toEqual([{ id: 'zc-1', name: 'ZeroClaw Sync' }])
-    expect(result.hermesAvailable).toBe(false)
-    expect(result.openclawAvailable).toBe(false)
-    expect(result.zeroclawAvailable).toBe(true)
-    expect(result.error).toBeNull()
   })
 })
