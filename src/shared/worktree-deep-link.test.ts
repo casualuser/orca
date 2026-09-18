@@ -58,6 +58,26 @@ describe('parseWorktreeDeepLink', () => {
     expect(parseWorktreeDeepLink('orca://orchestration/new')).toBeNull()
     expect(parseWorktreeDeepLink('orca://unknown/action')).toBeNull()
   })
+
+  it('drops unsafe name/branch values instead of passing them through', () => {
+    // Leading `-` risks flag injection once these reach a git/worktree command.
+    expect(
+      parseWorktreeDeepLink('orca://worktree/create?name=-x&branch=--upload-pack=evil')
+    ).toEqual({ type: 'worktree-create' })
+    // `..` path-traversal segments and embedded NULs are dropped too.
+    expect(parseWorktreeDeepLink('orca://worktree/create?name=../../etc&branch=main')).toEqual({
+      type: 'worktree-create',
+      branch: 'main'
+    })
+    expect(parseWorktreeDeepLink('orca://worktree/create?name=feat%00x')).toEqual({
+      type: 'worktree-create'
+    })
+    // Ordinary slash-separated branch names remain intact.
+    expect(parseWorktreeDeepLink('orca://worktree/create?name=feat/siri-shortcuts')).toEqual({
+      type: 'worktree-create',
+      name: 'feat/siri-shortcuts'
+    })
+  })
 })
 
 describe('worktreeDeepLinkFromArguments', () => {
