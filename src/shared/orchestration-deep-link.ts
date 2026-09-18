@@ -48,6 +48,9 @@ export function parseOrchestrationDeepLink(value: string): OrchestrationDeepLink
     : url.pathname.replace(/^\/+/, '').replace(/\/+$/, '')
 
   const segments = rawPath.split('/')
+  if (segments.length !== 2) {
+    return null
+  }
   const domain = segments[0]
   const action = segments[1]
 

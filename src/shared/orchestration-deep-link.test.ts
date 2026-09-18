@@ -68,6 +68,14 @@ describe('parseOrchestrationDeepLink', () => {
     expect(parseOrchestrationDeepLink('orca://unknown/action')).toBeNull()
     expect(parseOrchestrationDeepLink('orca://skills/share/share_123')).toBeNull()
   })
+
+  it('rejects surplus path segments on both orca:// and https:// links', () => {
+    expect(parseOrchestrationDeepLink('orca://orchestration/new/extra?title=x')).toBeNull()
+    expect(
+      parseOrchestrationDeepLink('https://app.orca.dev/orchestration/new/extra?title=x')
+    ).toBeNull()
+    expect(parseOrchestrationDeepLink('orca://orchestration')).toBeNull()
+  })
 })
 
 describe('orchestrationDeepLinkFromArguments', () => {

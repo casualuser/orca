@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { app, type BrowserWindow } from 'electron'
 import { parseSkillShareId } from '../shared/skill-share-link'
 import { parseOrchestrationDeepLink } from '../shared/orchestration-deep-link'
@@ -30,7 +31,11 @@ function requestDesktopActivation(argv: readonly string[] = []): void {
     state.mainWindow?.webContents.send('ui:openSkillShare', shareId)
   })
   state.orchestrationDeepLinks.capture(argv, (link) => {
-    state.mainWindow?.webContents.send('ui:openOrchestrationDeepLink', link)
+    if (!state.mainWindow || state.mainWindow.isDestroyed()) {
+      return false
+    }
+    state.mainWindow.webContents.send('ui:openOrchestrationDeepLink', link)
+    return true
   })
   state.osOpenedMarkdownFiles.capture(argv, publishOsOpenedMarkdownFiles)
   // Why: a duplicate `orca serve` must not drag a headless server into opening a desktop window (#11935).
@@ -85,7 +90,20 @@ const preflightReady = runMainProcessPreflight({
 
 // Why: when another process holds the lock we've already exited; skip file-writing side effects so this transient process never touches userData.
 if (preflightReady) {
-  if (process.defaultApp || !app.isDefaultProtocolClient('orca')) {
+  if (process.platform === 'linux') {
+    // Why: Electron derives the runtime desktop entry name from `app.name` ('orca'), which the
+    // Linux installer never ships (electron-builder.config.cjs names it `orca-ide.desktop` to
+    // avoid colliding with the GNOME Orca screen reader package). Without this, dev-mode
+    // protocol registration silently resolves to a nonexistent desktop file and does nothing.
+    app.setDesktopName('orca-ide.desktop')
+  }
+  if (process.defaultApp && process.argv.length >= 2) {
+    // Dev mode: Windows needs an explicit executable path and args, or it registers
+    // `electron.exe "%1"` and clicking a link launches bare Electron with no entry point.
+    app.setAsDefaultProtocolClient('orca', process.execPath, [path.resolve(process.argv[1])])
+  } else if (!app.isDefaultProtocolClient('orca')) {
+    // Why gated: an unconditional re-assert on every dev launch could hijack the scheme away
+    // from a correctly registered packaged install.
     app.setAsDefaultProtocolClient('orca')
   }
   app.on('open-url', (event, url) => {
