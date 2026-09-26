@@ -1,4 +1,4 @@
-import { readdir } from 'node:fs/promises'
+import { readdir, realpath, stat } from 'node:fs/promises'
 import { basename as pathBasename, extname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { MarkdownDocument } from '../../shared/filesystem-entry-types'
 
@@ -88,25 +88,70 @@ export function markdownDocumentsFromRelativePaths(
     .sort((a, b) => a.relativePath.localeCompare(b.relativePath))
 }
 
+const ALLOWED_DOT_DIRECTORIES = new Set(['.github', '.tasks'])
+
 export async function listMarkdownDocuments(rootPath: string): Promise<MarkdownDocument[]> {
   const documents: MarkdownDocument[] = []
+  const resolvedRoot = resolve(rootPath)
+  const canonicalRoot = await realpath(resolvedRoot).catch(() => resolvedRoot)
 
-  async function visitDirectory(dirPath: string): Promise<void> {
-    const entries = await readdir(dirPath, { withFileTypes: true })
+  async function visitDirectory(dirPath: string, ancestors = new Set<string>()): Promise<void> {
+    const realDirPath = await realpath(dirPath).catch(() => null)
+    if (!realDirPath || ancestors.has(realDirPath)) {
+      return
+    }
+    const relToRoot = relative(canonicalRoot, realDirPath)
+    if (hasParentTraversalSegment(relToRoot) || isAbsolute(relToRoot)) {
+      return
+    }
+    const nextAncestors = new Set(ancestors)
+    nextAncestors.add(realDirPath)
+
+    let entries
+    try {
+      entries = await readdir(dirPath, { withFileTypes: true })
+    } catch {
+      return
+    }
+
     for (const entry of entries) {
+      const entryPath = join(dirPath, entry.name)
+
       if (entry.isSymbolicLink()) {
+        const linkStat = await stat(entryPath).catch(() => null)
+        if (!linkStat) {
+          continue
+        }
+        if (linkStat.isDirectory()) {
+          if (entry.name === '.git' || entry.name === 'node_modules') {
+            continue
+          }
+          if (entry.name.startsWith('.') && !ALLOWED_DOT_DIRECTORIES.has(entry.name)) {
+            continue
+          }
+          await visitDirectory(entryPath, nextAncestors)
+          continue
+        }
+        if (linkStat.isFile() && isMarkdownDocumentName(entry.name)) {
+          const targetReal = await realpath(entryPath).catch(() => null)
+          if (targetReal) {
+            const relTarget = relative(canonicalRoot, targetReal)
+            if (!hasParentTraversalSegment(relTarget) && !isAbsolute(relTarget)) {
+              documents.push(markdownDocumentFromFilePath(rootPath, entryPath))
+            }
+          }
+        }
         continue
       }
 
-      const entryPath = join(dirPath, entry.name)
       if (entry.isDirectory()) {
         if (entry.name === '.git' || entry.name === 'node_modules') {
           continue
         }
-        if (entry.name.startsWith('.') && entry.name !== '.github') {
+        if (entry.name.startsWith('.') && !ALLOWED_DOT_DIRECTORIES.has(entry.name)) {
           continue
         }
-        await visitDirectory(entryPath)
+        await visitDirectory(entryPath, nextAncestors)
         continue
       }
 

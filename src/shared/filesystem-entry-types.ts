@@ -12,6 +12,7 @@ export type MarkdownDocument = {
   relativePath: string
   basename: string
   name: string
+  aliases?: string[]
 }
 
 // ─── Filesystem watcher ─────────────────────────────────────

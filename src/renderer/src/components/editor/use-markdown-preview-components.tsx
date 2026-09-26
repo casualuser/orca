@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import type { Components } from 'react-markdown'
 import type { MarkdownDocument } from '../../../../shared/filesystem-entry-types'
 import CodeBlockCopyButton from './CodeBlockCopyButton'
+import { MarkdownBlockquoteOrCallout } from './MarkdownBlockquoteOrCallout'
 import MermaidBlock from './MermaidBlock'
 import {
   getMarkdownDocLinkAnchor,
@@ -182,7 +183,7 @@ export function useMarkdownPreviewComponents({
         wrapAnnotatedBlock(
           'blockquote',
           node as MarkdownPreviewPositionNode,
-          <blockquote {...props}>{children}</blockquote>
+          <MarkdownBlockquoteOrCallout {...props}>{children}</MarkdownBlockquoteOrCallout>
         ),
       table: ({ node, children, ...props }) =>
         wrapAnnotatedBlock(
